@@ -1,2 +1,4 @@
 # data
-Raw Data From Different Sources
+
+This repository includes code for getting and cleaning data from various
+sources
