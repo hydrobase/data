@@ -1,4 +1,5 @@
 import re
+import json
 
 import numpy as np
 import pandas as pd
@@ -18,8 +19,8 @@ def normalize(s):
     -------
     s : str
 
-    Examples
-    --------
+    Example
+    -------
     >>> s = '°UC (Berkeley), I/School°<South Hall>'
     >>> normalize(s)
     'uc_berkeley_i_school'
@@ -38,8 +39,8 @@ def remove_dict_nans(d):
     -------
     d : dict
 
-    Examples
-    --------
+    Example
+    -------
     >>> d = {'a': 1, 'b': np.nan, 'c': 3}
     >>> d = remove_dict_nans(d)
     >>> sorted(d.keys())
@@ -47,24 +48,47 @@ def remove_dict_nans(d):
     """
     return {k : d[k] for k in d if pd.notnull(d[k])}
 
-def usda_json():
-    """Convert the USDA data to a list of dictionaries
+def nested_dict(dicts):
+    """Convert a list of dictionaries into a nested dictionary
+    with the scientific name as keys
+
+    Parameters
+    ----------
+    dicts : list
 
     Returns
     -------
-    usda_json : list
-        a list of dicts, one for each record in the data file
+    dict
+
+    Notes
+    -----
+    Using scientific name instead of common name because of
+    duplicate common names
+
+    Example
+    -------
+    >>> x = [{'scientific_name' : 'a', 'something' : 2}, {'scientific_name' : 'b', 'something' : 3}]
+    >>> d = nested_dict(x)
+    >>> sorted(d.keys())
+    ['a', 'b']
     """
+    assert isinstance(dicts, list)
+    return {d['scientific_name'].lower() : d for d in dicts}
+
+def usda_dicts():
+    """Convert the USDA data to a nested dictionary"""
     df = pd.read_csv('usda_plant2.csv')
     cols_orig = df.columns
     df.columns = [normalize(c) for c in cols_orig]
-    usda_json = df.to_dict(orient='record')
-    usda_json = [remove_dict_nans(item) for item in usda_json]
-    assert df.shape[0] == len(usda_json)
-    return usda_json
+    usda = df.to_dict(orient='record')
+    usda = [remove_dict_nans(item) for item in usda]
+    assert df.shape[0] == len(usda)
+    return nested_dict(usda)
 
 
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-    usda_json()
+    j = usda_dicts()
+    with open('usda.json', 'w') as f:
+        json.dump(j, f, indent=4)
