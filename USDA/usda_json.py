@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 
 
+usda_file = 'usda_plant2.csv'
+
 def normalize(s):
     """Removes text within angled brackets
     Removes commas, parens, and degree symbols
@@ -67,7 +69,8 @@ def nested_dict(dicts):
 
     Example
     -------
-    >>> x = [{'scientific_name' : 'a', 'something' : 2}, {'scientific_name' : 'b', 'something' : 3}]
+    >>> x = [{'scientific_name' : 'a', 'something' : 2},
+    ...      {'scientific_name' : 'b', 'something' : 3}]
     >>> d = nested_dict(x)
     >>> sorted(d.keys())
     ['a', 'b']
@@ -77,7 +80,7 @@ def nested_dict(dicts):
 
 def usda_dicts():
     """Convert the USDA data to a nested dictionary"""
-    df = pd.read_csv('usda_plant2.csv')
+    df = pd.read_csv(usda_file)
     cols_orig = df.columns
     df.columns = [normalize(c) for c in cols_orig]
     usda = df.to_dict(orient='record')
@@ -87,8 +90,13 @@ def usda_dicts():
 
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-    j = usda_dicts()
-    with open('usda.json', 'w') as f:
-        json.dump(j, f, indent=4)
+    from sys import argv
+    args = len(argv) > 1
+    if args:
+        if argv[1] == 'create':
+            j = usda_dicts()
+            with open('usda.json', 'w') as f:
+                json.dump(j, f, indent=4)
+    else:
+        import doctest
+        doctest.testmod()
