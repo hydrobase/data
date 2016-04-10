@@ -1,5 +1,7 @@
+import os
 import re
 import json
+import subprocess
 
 import numpy as np
 import pandas as pd
@@ -78,15 +80,71 @@ def nested_dict(dicts):
     assert isinstance(dicts, list)
     return {d['scientific_name'].lower() : d for d in dicts}
 
-def usda_dicts():
-    """Convert the USDA data to a nested dictionary"""
-    df = pd.read_csv(usda_file)
+def data(f):
+    """Load and normalize `usda_file`
+
+    Parameters
+    ----------
+    f : str
+        filename
+
+    Returns
+    -------
+    df : pd.DataFrame
+
+    Example
+    --------
+    >>> rows = int(subprocess.check_output(['wc', '-l', usda_file]).split()[0])
+    >>> df = data(usda_file)
+    >>> rows == df.shape[0]
+    True
+    """
+    df = pd.read_csv(f)
     cols_orig = df.columns
     df.columns = [normalize(c) for c in cols_orig]
+    return df
+
+def usda_dicts(df):
+    """Convert `df` to a nested dictionary"""
+    df = df.copy()
     usda = df.to_dict(orient='record')
     usda = [remove_dict_nans(item) for item in usda]
     assert df.shape[0] == len(usda)
     return nested_dict(usda)
+
+def to_json(d, filename):
+    """Dictionary to JSON
+
+    Parameters
+    ----------
+    d : dict
+    filename : str
+
+    Returns
+    -------
+    None
+
+    Example
+    -------
+    >>> d = {'one' : 1}
+    >>> filename = 'test.json'
+    >>> to_json(d, filename)
+    >>> with open(filename, 'r') as f:
+    ...     d_ = json.load(f)
+    >>> os.remove(filename)
+    >>> d == d_
+    True
+    """
+    assert isinstance(d, dict)
+    assert isinstance(filename, str)
+    with open(filename, 'w') as f:
+        json.dump(d, f, indent=4)
+
+def main():
+    df = data(usda_file)
+    usda_json = usda_dicts(df)
+    to_json(usda_json, 'test.json')
+    
 
 
 if __name__ == '__main__':
@@ -94,9 +152,7 @@ if __name__ == '__main__':
     args = len(argv) > 1
     if args:
         if argv[1] == 'create':
-            j = usda_dicts()
-            with open('usda.json', 'w') as f:
-                json.dump(j, f, indent=4)
+            main()
     else:
         import doctest
         doctest.testmod()
