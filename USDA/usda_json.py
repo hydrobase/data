@@ -2,6 +2,7 @@ import os
 import re
 import json
 import subprocess
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -112,6 +113,13 @@ def usda_dicts(df):
     assert df.shape[0] == len(usda)
     return nested_dict(usda)
 
+def mapping(df):
+    df = df.copy()
+    names_mapping = defaultdict(list)
+    for i in df.index:
+        names_mapping[df.common_name[i]].append(df.scientific_name[i])
+    return dict(names_mapping)
+
 def to_json(d, filename):
     """Dictionary to JSON
 
@@ -143,8 +151,9 @@ def to_json(d, filename):
 def main():
     df = data(usda_file)
     usda_json = usda_dicts(df)
-    to_json(usda_json, 'test.json')
-    
+    to_json(usda_json, 'usda.json')
+    names_map = mapping(df)
+    to_json(names_map, 'mapping.json')
 
 
 if __name__ == '__main__':
@@ -153,6 +162,8 @@ if __name__ == '__main__':
     if args:
         if argv[1] == 'create':
             main()
+        else:
+            print("'{}' is not a valid argument".format(argv[1]))
     else:
         import doctest
         doctest.testmod()
